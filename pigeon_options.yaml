@@ -1,0 +1,4 @@
+input: lib/core/pigeon/native_apis.dart
+dart_out: lib/core/pigeon/native_apis.g.dart
+kotlin_out: android/app/src/main/kotlin/com/seeka/qrscan/GeneratedPigeon.kt
+kotlin_package: com.seeka.qrscan
