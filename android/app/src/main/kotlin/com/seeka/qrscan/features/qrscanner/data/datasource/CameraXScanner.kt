@@ -1,36 +1,35 @@
 package com.seeka.qrscan.features.qrscanner.data.datasource
 
 import android.annotation.SuppressLint
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import com.seeka.qrscan.features.qrscanner.domain.model.QrCodeData
+import com.seeka.qrscan.presentation.ui.QRCodeAnalyzer
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 
-class CameraXScanner {
+class CameraXScanner(  private val onQrScanned: (String) -> Unit,
+private val onScanFailed: (Exception) -> Unit
+) {
+    private val _qrCodeFlow = MutableSharedFlow<QrCodeData>()
+    val qrCodeFlow: SharedFlow<QrCodeData> get() = _qrCodeFlow
 
-    val qrCodeFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
-
-    @SuppressLint("UnsafeOptInUsageError")
-    fun processImageProxy(imageProxy: ImageProxy) {
-        val mediaImage = imageProxy.image
-        if (mediaImage != null) {
-            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            val scanner = BarcodeScanning.getClient()
-
-            scanner.process(image)
-                .addOnSuccessListener { barcodes ->
-                    for (barcode in barcodes) {
-                        barcode.rawValue?.let { value ->
-                            qrCodeFlow.tryEmit(value)
-                        }
-                    }
-                }
-                .addOnFailureListener { }
-                .addOnCompleteListener {
-                    imageProxy.close()
-                }
-        } else {
-            imageProxy.close()
-        }
+    fun onQrCodeScanned(data: String) {
+        _qrCodeFlow.tryEmit(QrCodeData(data))
     }
+    private val qrCodeAnalyzer = QRCodeAnalyzer(
+        barcodeFormats = intArrayOf(Barcode.FORMAT_QR_CODE),
+        onSuccess = { onQrScanned(it) },
+        onFailure = { onScanFailed(it) }
+    )
+
+    @androidx.annotation.OptIn(ExperimentalGetImage::class)
+    fun processImageProxy(imageProxy: ImageProxy) {
+        qrCodeAnalyzer.analyze(imageProxy)
+    }
+
+
 }

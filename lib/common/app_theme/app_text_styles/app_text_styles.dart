@@ -1,6 +1,6 @@
 part of '../app_theme.dart';
 
-class AppTextStyles {
+class AppTextStyles extends TextStyle{
   AppTextStyles._(AppColors colors) {
     _AppTextStyle.colors = colors;
 

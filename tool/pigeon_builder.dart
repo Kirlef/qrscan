@@ -12,13 +12,15 @@ Future<void> main() async {
       'run',
       'pigeon',
       '--input',
-      'lib/core/pigeon/native_apis.dart', // El archivo de entrada
+      'lib/core/pigeon/pigeon.dart', // El archivo de entrada
       '--dart_out',
       'lib/core/pigeon/native_apis.g.dart', // El archivo Dart de salida
       '--kotlin_out',
-      'android/app/src/main/kotlin/com/seeka/qrscan/GeneratedPigeon.kt', // El archivo Kotlin de salida
-      '--kotlin_package',
-      'com.seeka.qrscan', // El paquete Kotlin
+      'android/app/src/main/kotlin/com/seeka/qrscan/core/pigeon/GeneratedPigeon.kt', // El archivo Kotlin de salida
+      // '--kotlin_package',
+      // 'com.seeka.qrscan', // El paquete Kotlin
+
+
     ],
   );
 

@@ -1,19 +1,10 @@
 # qrscan
 
-A new Flutter project.
+QR App Native with X Camera API.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-
-
-Generate Pigeon Config: dart run tool/pigeon_builder.dart     
+## Commands
+Get Dependencies: flutter pub get
+Generate Mock Files: flutter pub run build_runner build
+Generate Pigeon Config:  dart run pigeon --input lib/core/pigeon/pigeon.dart  
+Get coverage unit test: flutter test --coverage
+  

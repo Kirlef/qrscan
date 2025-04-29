@@ -15,27 +15,19 @@ import 'package:pigeon/pigeon.dart';
   dartPackageName: 'com_seeka_qrscan',
 ))
 
-@HostApi()
-abstract class AuthApi {
-  /// Verifica si la autenticación biométrica está disponible
-  bool isBiometricAvailable();
-
-  /// Ejecuta la autenticación biométrica
-  bool authenticate();
-}
-
+// HostApi para escanear QR
 @HostApi()
 abstract class QrScannerApi {
-  /// Ejecuta el escaneo de un código QR
-  String scanQr();
+  @async
+  String scanQr();            
 }
 
-@FlutterApi()
-abstract class AuthListenerApi {
-  void onAuthenticationStateChanged(bool success); // Notificación de autenticación
-}
+// FlutterApi para recibir respuestas
 
 @FlutterApi()
-abstract class QrScannerListenerApi {
-  void onQrScanResult(String result); // Notificación del resultado del escaneo QR
+abstract class ScanQrFlutterApi {
+  void onScanSuccess(String qrData);
+  void onScanError(String errorMessage);
 }
+
+
