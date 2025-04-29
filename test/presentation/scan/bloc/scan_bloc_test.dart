@@ -1,5 +1,6 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:qrscan/domain/entities/scan_entity.dart';
 import 'package:qrscan/domain/usecases/add_scan.dart';
 import 'package:qrscan/domain/usecases/delete_scan.dart';
@@ -7,22 +8,34 @@ import 'package:qrscan/domain/usecases/get_scan.dart';
 import 'package:qrscan/presentation/scan/bloc/scan_bloc.dart';
 import 'package:qrscan/presentation/scan/bloc/scan_event.dart';
 import 'package:qrscan/presentation/scan/bloc/scan_state.dart';
-import 'package:mockito/annotations.dart';
+class FakeScanEntity extends Fake implements ScanEntity {}
+class MockAddScan extends Mock implements AddScan {}
 
-import 'scan_bloc_test.mocks.dart';
+class MockGetScans extends Mock implements GetScans {}
 
-// Generar mocks automáticamente para las dependencias
-@GenerateMocks([AddScan, GetScans, DeleteScan])
+class MockDeleteScan extends Mock implements DeleteScan {}
+
 void main() {
-  late ScanBloc scanBloc;
   late MockAddScan mockAddScan;
   late MockGetScans mockGetScans;
   late MockDeleteScan mockDeleteScan;
+  late ScanBloc scanBloc;
+
+  final mockScan = ScanEntity(
+    id: 1,
+    contentBase64: 'testContent',
+    scannedAt: DateTime(2024, 1, 1),
+  );
+
+setUpAll(() {
+    registerFallbackValue(FakeScanEntity());
+  });
 
   setUp(() {
     mockAddScan = MockAddScan();
     mockGetScans = MockGetScans();
     mockDeleteScan = MockDeleteScan();
+
     scanBloc = ScanBloc(
       addScan: mockAddScan,
       getScans: mockGetScans,
@@ -30,65 +43,69 @@ void main() {
     );
   });
 
-  group('ScanBloc', () {
-    test('emits ScanLoaded when LoadScans is added', () async {
-      // Arrange
-      final scanList = [ScanEntity(id: 1, contentBase64: 'test', scannedAt: DateTime.now())];
-      when(mockGetScans()).thenAnswer((_) async => scanList);
+  group('LoadScans', () {
+    blocTest<ScanBloc, ScanState>(
+      'emits [ScanLoading, ScanLoaded] when successful',
+      build: () {
+        when(() => mockGetScans()).thenAnswer((_) async => [mockScan]);
+        return scanBloc;
+      },
+      act: (bloc) => bloc.add(LoadScans()),
+      expect: () => [
+        isA<ScanLoading>(),
+        isA<ScanLoaded>().having((s) => s.scans.length, 'scans.length', 1),
+      ],
+    );
 
-      // Act
-      scanBloc.add(LoadScans());
+    blocTest<ScanBloc, ScanState>(
+      'emits [ScanLoading, ScanError] on exception',
+      build: () {
+        when(() => mockGetScans()).thenThrow(Exception());
+        return scanBloc;
+      },
+      act: (bloc) => bloc.add(LoadScans()),
+      expect: () => [
+        isA<ScanLoading>(),
+        isA<ScanError>(),
+      ],
+    );
+  });
 
-      // Assert
-      await expectLater(
-        scanBloc.stream,
-        emitsInOrder([
-          ScanLoading(),
-          ScanLoaded(scanList),
-        ]),
-      );
-    });
+  group('AddScanEvent', () {
+    blocTest<ScanBloc, ScanState>(
+      'calls addScan and then emits [ScanLoading, ScanLoaded]',
+      build: () {
+        when(() => mockAddScan(any())).thenAnswer((_) async {});
+        when(() => mockGetScans()).thenAnswer((_) async => [mockScan]);
+        return scanBloc;
+      },
+      act: (bloc) => bloc.add(AddScanEvent('testContent')),
+      expect: () => [
+        isA<ScanLoading>(),
+        isA<ScanLoaded>(),
+      ],
+      verify: (_) {
+        verify(() => mockAddScan(any())).called(1);
+      },
+    );
+  });
 
-    test('emits ScanError when LoadScans fails', () async {
-      // Arrange
-      when(mockGetScans()).thenThrow(Exception('Failed to load scans'));
-
-      // Act
-      scanBloc.add(LoadScans());
-
-      // Assert
-      await expectLater(
-        scanBloc.stream,
-        emitsInOrder([
-          ScanLoading(),
-          ScanError(),
-        ]),
-      );
-    });
-
-    test('calls addScan when AddScanEvent is added', () async {
-      // Arrange
-      const qrContent = 'some_qr_content';
-      final scan = ScanEntity(id: 1, contentBase64: qrContent, scannedAt: DateTime.now());
-      when(mockAddScan(scan)).thenAnswer((_) async {});
-
-      // Act
-      scanBloc.add(AddScanEvent(qrContent));
-
-      // Assert
-      verify(mockAddScan(scan)).called(1);
-    });
-
-    test('calls deleteScan when DeleteScanEvent is added', () async {
-      // Arrange
-      const scanId = 1;
-      when(mockDeleteScan(scanId)).thenAnswer((_) async {});
-
-      // Act
-      scanBloc.add(DeleteScanEvent(scanId));
-
-      // Assert
-      verify(mockDeleteScan(scanId)).called(1);
-    });
+  group('DeleteScanEvent', () {
+    blocTest<ScanBloc, ScanState>(
+      'calls deleteScan and then emits [ScanLoading, ScanLoaded]',
+      build: () {
+        when(() => mockDeleteScan(1)).thenAnswer((_) async {});
+        when(() => mockGetScans()).thenAnswer((_) async => []);
+        return scanBloc;
+      },
+      act: (bloc) => bloc.add(DeleteScanEvent(1)),
+      expect: () => [
+        isA<ScanLoading>(),
+        isA<ScanLoaded>().having((s) => s.scans.isEmpty, 'scans.isEmpty', true),
+      ],
+      verify: (_) {
+        verify(() => mockDeleteScan(1)).called(1);
+      },
+    );
   });
 }
